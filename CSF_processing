@@ -2,7 +2,7 @@
 library(dplyr)
 
 # CSF data load-in
-upenn_csf_master<-readr::read_delim("C:\\Work Folder\\Amprion\\Source Data\\Source Data\\UPENNBIOMK_MASTER_FINAL.csv")
+upenn_csf_master<-readr::read_delim("~/UPENNBIOMK_MASTER_FINAL.csv")
 upenn_csf_master<-upenn_csf_master %>% 
   dplyr::filter(BATCH %in% c("UPENNBIOMK9","UPENNBIOMK10",
                              "UPENNBIOMK12","UPENNBIOMK13"))
