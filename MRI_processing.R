@@ -53,7 +53,7 @@ mri_data <- mri_data %>%
 ##########################################################################################################################
 # ICV-adjustment
 ##########################################################################################################################
-#making sure that the adjusted volumes are back in - do subcortical volumes also need to be icv adjusted?
+#making sure that the adjusted volumes are back in
 volumes <- mri_data %>%
   dplyr::select(contains("CV"))
 
@@ -191,7 +191,7 @@ mri_data_cn <- mri_data_cn %>%
 # now doing the age adjustment
 for (i in roi_variables){
   #regressing out age in cn
-  lm_mod_age <- lm(mri_data_cn[[i]] ~ age + poly(age, 2, raw = TRUE)[,"2"], data = mri_data_cn, na.action=na.exclude) # poly(age, 2) or I(age^2)
+  lm_mod_age <- lm(mri_data_cn[[i]] ~ age + poly(age, 2, raw = TRUE)[,"2"], data = mri_data_cn, na.action=na.exclude)
   
   #creating a new variable for each i
   predictions_age <- predict(lm_mod_age, mri_plot_data)
