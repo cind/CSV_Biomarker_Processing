@@ -5,7 +5,7 @@ source('~/Documents/Projects/MixedPathologies/ComGamPackage-master/ComGamFunctio
 source('~/Documents/Projects/MixedPathologies/ComGamPackage-master/ComGamHarmFunction.R')
 
 #first getting demographics (getting information to calculate age)
-dem <- read.csv("C:\\Work Folder\\paper data longitudinal phases\\demographics.csv") %>%
+dem <- read.csv("~/demographics.csv") %>%
   dplyr::mutate(day = 1,
                 birthdate = as.character(paste(day, PTDOB, sep = "/")))
 dem <- dem %>%
@@ -13,20 +13,20 @@ dem <- dem %>%
   dplyr::select(RID, PTGENDER, PTEDUCAT, birthdate) %>%
   dplyr::distinct() %>%
   dplyr::filter(!is.na(birthdate))
-dem <- merge(dem, apoeres, all = TRUE) %>% #(apoe processing- steps are in other file)
+dem <- merge(dem, apoeres, all = TRUE) %>% # apoe processing- steps are in other file
   dplyr::mutate(apoe = case_when(apoe == "E2/E3" | apoe == "E2/E2" ~ "E2",
                                  apoe == "E3/E3" ~ "E3",
                                  apoe == "E3/E4" | apoe == "E4/E4" ~ "E4"),
                 RID = as.character(RID))
 
 # calling in all freesurfer
-adni1_1.5 <- read.csv("C:\\Work Folder\\paper data longitudinal phases\\freesurfer_4.3_ADNI1_protocol_1.5T.csv") %>%
+adni1_1.5 <- read.csv("~/freesurfer_4.3_ADNI1_protocol_1.5T.csv") %>%
   dplyr::mutate(STUDY = "ADNI1",
                 Field_Strength = "1.5T")
-adni2_3 <- read.csv("C:\\Work Folder\\paper data longitudinal phases\\freesurfer_5.1_ADNI2GO_protocol_3T.csv") %>%
+adni2_3 <- read.csv("~/freesurfer_5.1_ADNI2GO_protocol_3T.csv") %>%
   dplyr::mutate(STUDY = "ADNI2",
                 Field_Strength = "3T")
-adni3_3 <- read.csv("C:\\Work Folder\\paper data longitudinal phases\\freesurfer_6.0_ADNI3_protocol_3T.csv") %>%
+adni3_3 <- read.csv("~/freesurfer_6.0_ADNI3_protocol_3T.csv") %>%
   dplyr::mutate(STUDY = "ADNI3",
                 Field_Strength = "3T")
 
@@ -43,13 +43,17 @@ mri_data <- mri_data %>%
 #merging demographics and freesurfer data
 mri_data <- merge(mri_data, dem, all.x = TRUE) %>%
   dplyr::mutate(age = round(lubridate::time_length(difftime(EXAMDATE, birthdate), "years"), digits = 1)) %>%
-  dplyr::rename(ST88CV = ST88SV, #these are labelled SV but are actually CV
+  dplyr::rename(ST88CV = ST88SV, #these are hippocampal volumes - relabeling as CV regions
                 ST29CV = ST29SV) %>%
   dplyr::filter(OVERALLQC == "Pass")
 
-mri_data <- mri_data[,colSums(is.na(mri_data))<nrow(mri_data)]
+mri_data <- mri_data %>%
+  dplyr::select(RID, EXAMDATE, LONIUID, IMAGEUID, STUDY, PTGENDER, age, ends_with("TA") | ends_with("CV"))
 
-#putting aside cortical volumes to ICV-adjust
+##########################################################################################################################
+# ICV-adjustment
+##########################################################################################################################
+#making sure that the adjusted volumes are back in - do subcortical volumes also need to be icv adjusted?
 volumes <- mri_data %>%
   dplyr::select(contains("CV"))
 
@@ -74,5 +78,130 @@ for (i in variables[-9]){
 
 #getting rid of the previous columns that are now replaced with ICV-adjusted values
 mri_data <- mri_data %>%
-  dplyr::select(-names(volumes)) %>%
-  dplyr::filter(!STUDY == "ADNI1") #currently getting rid of ADNI1 values due to weird age association issues with ADNI1 freesurfer data
+  dplyr::select(-names(volumes))
+
+##########################################################################################################################
+# Hatmonization and pre-processing for harmonization
+##########################################################################################################################
+
+# getting diagnosis into the dataset by matching the closest diagnosis
+mri_data <- merge(mri_data, diagnoses, all.x = TRUE) %>% # diagnoses processing in other processing step file
+  dplyr::mutate(date_diff = abs(lubridate::time_length(difftime(EXAMDATE, DX.DATE), "years"))) %>%
+  dplyr::group_by(RID, EXAMDATE, LONIUID, IMAGEUID, STUDY, PTGENDER, age) %>%
+  dplyr::mutate(min_match_date = min(date_diff)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(min_match_date == date_diff) %>%
+  dplyr::distinct()
+
+# getting mri data split into features and covariates
+all_features <- mri_data[, c(8:150)]
+all_features <- all_features %>%
+  dplyr::select_if(~mean(is.na(.)) < 0.2)
+all_covariates <- mri_data[, c(1:7, 155)]
+
+# now creating dataset for harmonization
+all_data_combined_CN <- cbind(all_features, all_covariates) %>%
+  dplyr::filter(diags == "CN")
+
+all_features_CN <- all_data_combined_CN[, 1:138]
+all_covariates_CN <- all_data_combined_CN[, c(143:145)]
+extra_covariates_CN <- all_data_combined_CN[, c(139:142, 146)]
+
+all_covariates_CN$STUDY <- as.factor(all_covariates_CN$STUDY)
+all_covariates_CN$age <- as.numeric(all_covariates_CN$age)
+all_covariates_CN$PTGENDER <- as.factor(all_covariates_CN$PTGENDER)
+
+#harmonization
+CN_data_harmonized <- ComGamHarm(feature.data = all_features_CN,
+                                 covar.data = all_covariates_CN, 
+                                 eb                = TRUE,
+                                 parametric        = TRUE,
+                                 smooth.terms      = c("age"),  # c("Examdate_Age"),
+                                 k.val             = 5,
+                                 verbose           = TRUE,
+                                 model.diagnostics = FALSE)
+
+CN_harmonized_data <- as.data.frame(t(CN_data_harmonized$harm.results))
+CN_harmonized_data <- cbind(extra_covariates_CN, all_covariates_CN, CN_harmonized_data)
+
+all_data_combined_MCI_AD <- cbind(all_features, all_covariates) %>%
+  dplyr::filter(!diags == "CN")
+
+all_features_MCI_AD <- all_data_combined_MCI_AD[, 1:138] 
+all_covariates_MCI_AD <- all_data_combined_MCI_AD[, c(143:145)]  
+extra_covariates_MCI_AD <- all_data_combined_MCI_AD[, c(139:142, 146)] 
+
+all_covariates_MCI_AD$STUDY <- as.factor(all_covariates_MCI_AD$STUDY)
+all_covariates_MCI_AD$age <- as.numeric(all_covariates_MCI_AD$age)
+all_covariates_MCI_AD$PTGENDER <- as.factor(all_covariates_MCI_AD$PTGENDER)
+
+MCI_AD_harmonized <- t(ApplyHarm(feature.data   = all_features_MCI_AD,
+                                 covariate.data = all_covariates_MCI_AD,
+                                 comgam.out     = CN_data_harmonized))
+
+MCI_AD_harmonized <- as.data.frame(MCI_AD_harmonized)
+MCI_AD_harmonized <- cbind(extra_covariates_MCI_AD, all_covariates_MCI_AD, MCI_AD_harmonized)
+
+harmonized_data_from_CN <- rbind(CN_harmonized_data, MCI_AD_harmonized) #%>%
+
+##########################################################################################################################
+# Age-adjustment
+##########################################################################################################################
+# creating list of variables that need to be ICV-adjusted
+roi_variables <- c()
+
+rois <- harmonized_data_from_CN %>%
+  dplyr::select(ends_with("SV") | ends_with("TA") | ends_with("CV") | ends_with("SA"))
+
+for (roi_num in 1:length(names(rois))){
+  
+  current_roi <- names(rois)[roi_num]
+  roi_variables <- append(roi_variables, current_roi)
+  
+}
+
+mri_plot_data <- harmonized_data_from_CN
+
+mri_data_cn <- mri_plot_data %>%
+  dplyr::filter(diags == "CN") %>%
+  dplyr::mutate(RID = as.character(RID))
+
+#getting amyloid negative cases
+amyloid_negs <- amyloid_pet %>%
+  dplyr::group_by(RID) %>%
+  dplyr::filter(AmyloidPosPET == 0) %>%
+  dplyr::mutate(first_a_neg_date_pet = min(EXAMDATE_pet),
+                RID = as.character(RID)) %>%
+  dplyr::select(RID, first_a_neg_date_pet) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct()
+
+mri_data_cn <- mri_data_cn %>%
+  dplyr::left_join(amyloid_negs) %>%
+  dplyr::mutate(diff_time = abs(lubridate::time_length(difftime(EXAMDATE, first_a_neg_date_pet), "years"))) %>%
+  dplyr::group_by(RID) %>%
+  dplyr::filter(diff_time == min(diff_time)) %>%
+  dplyr::ungroup()
+mri_data_cn <- mri_data_cn %>%
+  dplyr::group_by(RID) %>%
+  dplyr::filter(row_number() == 1) %>%
+  dplyr::ungroup()
+
+
+# now doing the age adjustment
+for (i in roi_variables){
+  #regressing out age in cn
+  lm_mod_age <- lm(mri_data_cn[[i]] ~ age + poly(age, 2, raw = TRUE)[,"2"], data = mri_data_cn, na.action=na.exclude) # poly(age, 2) or I(age^2)
+  
+  #creating a new variable for each i
+  predictions_age <- predict(lm_mod_age, mri_plot_data)
+  mri_plot_data[[i]] <- mri_plot_data[[i]] - predictions_age
+  mri_plot_data[[i]] <- coef(lm_mod_age)[1] + mri_plot_data[i] } #intercept + residuals, most often you just see people using the residuals as the adjusted value (see also "adjust" function from datawizard package)
+
+##########################################################################################################################
+# calculating meta-ROI from regions according to Jack Jr. et al
+##########################################################################################################################
+
+mri_plot_data <- mri_plot_data %>%  
+  dplyr::mutate(meta_ROI_left = (ST24TA[[1]] + ST32TA[[1]] + ST40TA[[1]] + ST26TA[[1]])/4,  # meta_ROI is mean cortical thickness in the following individual ROIs: entorhinal, inferior temporal, middle temporal, and fusiform.
+                meta_ROI_right = (ST83TA[[1]] + ST91TA[[1]] + ST99TA[[1]] + ST85TA[[1]])/4)
