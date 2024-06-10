@@ -1,7 +1,7 @@
 #adding diagnoses as CN, MCI, or AD
 library(dplyr)
 
-diagnoses <- read.csv("~/DXSUM_PDXCONV_ADNIALL.csv")
+diagnoses <- read.csv("~/DXSUM_PDXCONV.csv")
 diagnoses[diagnoses == ""] <- NA
 
 diagnoses_all <- diagnoses %>%
