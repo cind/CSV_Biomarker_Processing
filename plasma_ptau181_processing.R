@@ -2,7 +2,7 @@
 
 ## Data is longitudinal
 plasma_ptau <- 
-  readr::read_delim("~/Projects/Amprion Project/Source Data/UGOTPTAU181_06_18_20.csv") %>% 
+  readr::read_delim("~/UGOTPTAU181_06_18_20.csv") %>% # edit to your source file name + location 
   dplyr::select(RID,VISCODE2,EXAMDATE,PLASMAPTAU181)
 
 ## Some subjects have two measurements at a given visit; took mean two measurements for those subjects

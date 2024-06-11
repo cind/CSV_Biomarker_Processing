@@ -4,7 +4,7 @@
 library(tidyverse)
 
 plasma_nfl <-
-  readr::read_delim("~/Projects/Amprion Project/Source Data/ADNI_BLENNOWPLASMANFLLONG_10_03_18.csv") %>% 
+  readr::read_delim("~/ADNI_BLENNOWPLASMANFLLONG_10_03_18.csv") %>% # edit to your source file name + location 
   dplyr::select(RID,VISCODE2,EXAMDATE,PLASMA_NFL)
 
 ## Some subjects had two measurements at a given visit; averaged two measurements for those subjects
