@@ -1,11 +1,14 @@
-#adding diagnoses as CN, MCI, or AD
-library(dplyr)
+# table name: Diagnostic Summary [ADNI1,GO,2,3,4]
 
-diagnoses <- read.csv("~/DXSUM_PDXCONV.csv")
-diagnoses[diagnoses == ""] <- NA
+library(tidyverse)
 
-diagnoses_all <- diagnoses %>%
-  dplyr::mutate(diagnosis = dplyr::case_when(DIAGNOSIS==1 | DXCHANGE==1 | DXCHANGE==7 | DXCHANGE==9 | DXCURREN == 1 ~ 'CN',
-                                         DIAGNOSIS==2 | DXCHANGE==2 | DXCHANGE==4 | DXCHANGE==8 | DXCURREN == 2 ~ 'MCI',
-                                         DIAGNOSIS==3 | DXCHANGE==3 | DXCHANGE==5 | DXCHANGE==6 | DXCURREN == 3 ~ 'AD')) %>%
-  dplyr::rename(DX.DATE = EXAMDATE)
+adni_diagnoses <-
+  readr::read_delim("~/DXSUM_PDXCONV_21May2024.csv") %>% # change to your file name and location here 
+  dplyr::select(RID,DIAGNOSIS,EXAMDATE,VISCODE2) %>%
+  dplyr::mutate(DX = case_when(
+    (DIAGNOSIS == 1) ~ "CU",
+    (DIAGNOSIS == 2) ~ "MCI",
+    (DIAGNOSIS == 3) ~ "Dementia")
+  ) %>%
+  dplyr::select(RID,DX,VISCODE) %>%
+  dplyr::filter(!is.na(DX))
