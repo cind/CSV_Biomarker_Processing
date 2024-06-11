@@ -1,8 +1,17 @@
-# processing steps for ICV-adjusted, age-adjusted, harmonized ROI values (also creating cortical thickness meta-ROI)
+## table name on LONI - ADNI1 Protocol 1.5T: 	UCSF - Cross-Sectional FreeSurfer (FreeSurfer Version 4.3) [ADNI1,GO,2]
+## table name on LONI - ADNIGO/2 Protocol 3T: 	UCSF - Cross-Sectional FreeSurfer (5.1) [ADNI1,GO,2]
+## table name on LONI - ADNI3 Protocol 3T: 	UCSF - Cross-Sectional FreeSurfer (6.0) [ADNI3]
+## table name on LONI - Demographics:  	Subject Demographics [ADNI1,GO,2,3,4]
+
 library(dplyr)
+
 # ComBat harmonization
-source('~/Documents/Projects/MixedPathologies/ComGamPackage-master/ComGamFunctionHelpers.R')
-source('~/Documents/Projects/MixedPathologies/ComGamPackage-master/ComGamHarmFunction.R')
+source('~/ComGamPackage-master/ComGamFunctionHelpers.R')
+source('~/ComGamPackage-master/ComGamHarmFunction.R')
+
+#####################################################################################################################
+# processing steps for ICV-adjusted, age-adjusted, harmonized ROI values (also creating cortical thickness meta-ROI)
+#####################################################################################################################
 
 #first getting demographics (getting information to calculate age)
 dem <- read.csv("~/demographics.csv") %>%
