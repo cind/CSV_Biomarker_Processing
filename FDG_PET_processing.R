@@ -1,3 +1,5 @@
+## table name on LONI:	UC Berkeley - FDG 8mm Res Analysis [ADNI1,GO,2,3]
+
 #this calculates pons-corrected meta-roi as described by the UC Berkeley FDG MetaROI methods on LONI
 library(dplyr)
 
