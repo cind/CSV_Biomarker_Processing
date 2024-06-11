@@ -1,3 +1,6 @@
+## table name on LONI - Subject E-COG: 	Everyday Cognition - Participant Self Report [ADNIGO,2,3]
+## table name on LONI - Study Partner E-COG: 	Everyday Cognition - Study Partner Report [ADNIGO,2,3]
+
 ############################################################################################################
 #E-COG: Subject
 ############################################################################################################
