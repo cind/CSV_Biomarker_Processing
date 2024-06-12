@@ -1,5 +1,7 @@
 ## table name: University of Gothenburg Longitudinal Plasma P-tau181 [ADNI1,GO,2]
 
+library(tidyverse)
+
 ## Data is longitudinal
 plasma_ptau <- 
   readr::read_delim("~/UGOTPTAU181_06_18_20.csv") %>% # edit to your source file name + location 
