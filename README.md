@@ -1,3 +1,8 @@
+ -    	**General Information for files**
+       - RID: Subject ID
+       - VISCODE: (now defunct) marker of visit
+       - VISCODE2: marker of visit
+ 
  - Demographic Variables of Interest (LONI file name: Subject Demographics [ADNI1,GO,2,3,4])
    	- Race: PTRACCAT
    	   - 1 = American Indian or Alaskan Native
@@ -13,3 +18,7 @@
    	   - 3 = Unknown
    	- Education: PTEDUCAT
    	   - Continuous variable (range: [1, 20])
+   	     
+1. First list item
+   - First nested list item
+     - Second nested list item
