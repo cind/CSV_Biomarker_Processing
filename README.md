@@ -63,13 +63,15 @@ If you have processing steps that you want to adjust/contribute, work from ____ 
 The ADNI link at the top of the page sends you to the ADNI dictionary, which will be more extensive than what is offered here.
 However, the ADNI dictionary is not the most user-friendly, so we created a mini-dictionary that is relevant to our lab group.
 
-This is an example of how to list things you need to use the software and how to install them.
+### General Information
 * General Information
   ```sh
        - RID: Subject ID
        - VISCODE: (now defunct) marker of visit
        - VISCODE2: marker of visit
   ```
+  
+### Demographics
 * Demographic Variables of Interest
   ```sh
        - Race: PTRACCAT
@@ -89,11 +91,9 @@ This is an example of how to list things you need to use the software and how to
   ```
 
 
-### General Information
 
 
 
-### Demographics
 
 
 
