@@ -1,23 +1,20 @@
-## table name on LONI: ApoE - Results [ADNI1,GO,2,3]
+## table name on LONI: ApoE Genotyping - Results [ADNI1,GO,2,3]
 
 library(tidyverse)
 
-#this creates a column with both APOE alleles combined
-apoeres <- read.csv("~/APOERES.csv") 
-apoeres$apoe <- paste(paste("E", apoeres$APGEN1, sep = ""), paste("E", apoeres$APGEN2, sep = ""), sep = "/")
+apoeres <- read.csv("~/Downloads/APOERES_31Jul2024.csv") 
 
-## creates five additional utility variables for APOE information
-## APOE2, APOE3, APOE4: the total number of that allele each subject has
+## creates two additional utility variables for APOE information
 ## apoe4_status: whether a subject has at least one APOE-e4 allele
 ## apoe4_status_text: a leveled factor for each subject's APOE-e4 genotype
 apoeres <- apoeres %>% 
-  dplyr::mutate(APOE2 = as.numeric(APGEN1==2)+as.numeric(APGEN2==2),
-                APOE3 = as.numeric(APGEN1==3)+as.numeric(APGEN2==3),
-                APOE4 = as.numeric(APGEN1==4)+as.numeric(APGEN2==4)) %>%
-  dplyr::select(RID,APOE4) %>% dplyr::mutate(apoe4_status=(APOE4>0),
+  dplyr::mutate(apoe4_status=GENOTYPE %in% c("2/4","3/4","4/4"),
                                              apoe4_status_text = factor(case_when(
-                                               APOE4==0 ~ "Non-Carrier",
-                                               APOE4==1 ~ "Heterozygotes",
-                                               APOE4==2 ~ "Homozygotes")
-                                               ,levels = c("Non-Carrier","Heterozygotes","Homozygotes"))) %>%
+                                               GENOTYPE=="4/4" ~ "Homozygotes",
+                                               GENOTYPE %in% c("2/4","3/4") ~ "Heterozygotes",
+                                               TRUE ~ "Non-Carrier"),
+                                               levels = c("Non-Carrier","Heterozygotes","Homozygotes"))) %>%
   dplyr::distinct_at(vars(RID),.keep_all = TRUE)
+
+apoeres <- apoeres %>%
+  dplyr::select(RID,GENOTYPE,apoe4_status_text,apoe4_status)
