@@ -2,6 +2,8 @@
 ## table name on LONI - ADNIGO/2 Protocol 3T: 	UCSF - Cross-Sectional FreeSurfer (5.1) [ADNI1,GO,2]
 ## table name on LONI - ADNI3 Protocol 3T: 	UCSF - Cross-Sectional FreeSurfer (6.0) [ADNI3]
 ## table name on LONI - Demographics:  	Subject Demographics [ADNI1,GO,2,3,4]
+## table name on LONI - Diagnoses: 	Diagnostic Summary [ADNI1,GO,2,3,4]
+
 
 library(dplyr)
 library(reshape)
