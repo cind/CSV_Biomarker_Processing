@@ -48,4 +48,4 @@ cubbt_biomarkers <- cubbt_biomarkers %>%
   dplyr::group_by(RID,VISCODE2,manufacturer_plasma_cubbt) %>%
   dplyr::mutate(across(ends_with("_cubbt") & where(is.numeric),.fns = ~mean(.,na.rm=TRUE))) %>%
   dplyr::ungroup() %>%
-  dplyr::distinct_at(vars(RID,VISCODE2),.keep_all = TRUE)
+  dplyr::distinct_at(vars(RID,VISCODE2,manufacturer_plasma_cubbt),.keep_all = TRUE)
