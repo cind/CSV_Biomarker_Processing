@@ -4,11 +4,16 @@
 ## table name on LONI - Demographics:  	Subject Demographics [ADNI1,GO,2,3,4]
 ## table name on LONI - Diagnoses: 	Diagnostic Summary [ADNI1,GO,2,3,4]
 
+## ComBat harmonization references: 
+  # 1) Pomponio et al. (2020). Harmonization of large MRI datasets for the analysis of brain imaging patterns throughout the lifespan. doi: 10.1016/j.neuroimage.2019.116450 URL https://doi.org/10.1016/j.neuroimage.2019.116450
+    # Github repo: https://github.com/rpomponio/neuroHarmonize
+  # 2) Fortin Jean-Philippe et al. (2017). Harmonization of multi-site diffusion tensor imaging data. doi: 10.1101/116541. URL http://biorxiv.org/content/early/2017/03/15/116541.
 
+# loading libraries
 library(dplyr)
 library(reshape)
 
-# ComBat harmonization
+# ComBat harmonization source
 source('~/projects/ComGamPackage-master/ComGamFunctionHelpers.R')
 source('~/projects/ComGamPackage-master/ComGamHarmFunction.R')
 
