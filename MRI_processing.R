@@ -18,7 +18,7 @@ source('~/projects/ComGamPackage-master/ComGamFunctionHelpers.R')
 source('~/projects/ComGamPackage-master/ComGamHarmFunction.R')
 
 #####################################################################################################################
-# processing steps for ICV-adjusted, age-adjusted, harmonized ROI values (also creating cortical thickness meta-ROI)
+# processing steps for ICV-adjusted, harmonized ROI values (also creating cortical thickness meta-ROI)
 #####################################################################################################################
 
 # Diagnoses as CN, MCI, or AD
@@ -206,6 +206,7 @@ adni3_3_temp <- adni3_3_temp %>%
 
 #############################
 # ICV-adjustments: setting up regression
+# ICV being adjusted within each protocol before merging datasets                 
 #############################
 # ADNI 1
 # creating list of variables that need to be ICV-adjusted
@@ -268,7 +269,7 @@ adni3_3 <- adni3_3 %>%
   dplyr::select(-names(volumes_adni3_3))
 
 #############################
-# merging variables together
+# merging datasets together
 #############################
 
 mri_list <- list(adni1_1.5, adni2_3, adni3_3)
@@ -330,39 +331,166 @@ MCI_AD_harmonized <- cbind(extra_covariates_MCI_AD, all_covariates_MCI_AD, MCI_A
 
 harmonized_data_from_CN <- rbind(CN_harmonized_data, MCI_AD_harmonized)
 
-#############################
-# Age Adjustment
-#############################
-mri_plot_data <- harmonized_data_from_CN %>%
-  dplyr::distinct()
-
-#getting amyloid-negative CN cases
-mri_plot_data_temp <- mri_plot_data %>%
-  dplyr::filter(diags == "CU")
-mri_plot_data_temp <- mri_plot_data_temp %>%
-  dplyr::left_join(amyloid_negs) %>%
-  dplyr::mutate(diff_time = abs(lubridate::time_length(difftime(EXAMDATE, first_a_neg_date_pet), "years"))) %>%
-  dplyr::group_by(RID) %>%
-  dplyr::filter(diff_time == min(diff_time)) %>%
-  dplyr::ungroup()
-mri_plot_data_temp <- mri_plot_data_temp %>%
-  dplyr::group_by(RID) %>%
-  dplyr::filter(row_number() == 1) %>%
-  dplyr::ungroup()
-
-# creating list of variables that need to be age-adjusted - for now just volumes and cortical thickness
-features_mri_plot_data <- mri_plot_data %>%
-  dplyr::select(contains("CV") | contains("TS") | contains("SV"))
-
-variables_mri_plot_data <- c()
-
-for (roi_num in 1:length(names(features_mri_plot_data))){
-  current_roi <- names(features_mri_plot_data)[roi_num]
-  variables_mri_plot_data <- append(variables_mri_plot_data, current_roi)
-}
-
-# regression for age-adjustment
-for (i in variables_mri_plot_data){
-  fit <- lm(mri_plot_data_temp[[i]] ~ age + poly(age, 2, raw = TRUE)[,"2"], data = mri_plot_data_temp, na.action=na.exclude)
-  mri_plot_data[i] <- mri_plot_data[paste0(i)] - (mri_plot_data$age - mean(mri_plot_data_temp$age, na.rm = T)) * fit$coefficients[2]
-}
+# ######################################################################################################################
+# Additional (Optional) Adjustments (if regressing out additional variables) - commented out since not always desired
+# ######################################################################################################################
+#                               
+# #############################
+# # Age Adjustment - regress out age
+# #############################
+# mri_plot_data <- harmonized_data_from_CN %>%
+#   dplyr::distinct()
+# 
+# #getting amyloid-negative CN cases
+# mri_plot_data_temp <- mri_plot_data %>%
+#   dplyr::filter(diags == "CU")
+# mri_plot_data_temp <- mri_plot_data_temp %>%
+#   dplyr::left_join(amyloid_negs) %>%
+#   dplyr::mutate(diff_time = abs(lubridate::time_length(difftime(EXAMDATE, first_a_neg_date_pet), "years"))) %>%
+#   dplyr::group_by(RID) %>%
+#   dplyr::filter(diff_time == min(diff_time)) %>%
+#   dplyr::ungroup()
+# mri_plot_data_temp <- mri_plot_data_temp %>%
+#   dplyr::group_by(RID) %>%
+#   dplyr::filter(row_number() == 1) %>%
+#   dplyr::ungroup()
+# 
+# # creating list of variables that need to be age-adjusted - for now just volumes and cortical thickness
+# features_mri_plot_data <- mri_plot_data %>%
+#   dplyr::select(contains("CV") | contains("TS") | contains("SV"))
+# 
+# variables_mri_plot_data <- c()
+# 
+# for (roi_num in 1:length(names(features_mri_plot_data))){
+#   current_roi <- names(features_mri_plot_data)[roi_num]
+#   variables_mri_plot_data <- append(variables_mri_plot_data, current_roi)
+# }
+# 
+# # regression for age-adjustment
+# for (i in variables_mri_plot_data){
+#   fit <- lm(mri_plot_data_temp[[i]] ~ age + poly(age, 2, raw = TRUE)[,"2"], data = mri_plot_data_temp, na.action=na.exclude)
+#   mri_plot_data[i] <- mri_plot_data[paste0(i)] - (mri_plot_data$age - mean(mri_plot_data_temp$age, na.rm = T)) * fit$coefficients[2]
+# }
+# 
+# #############################
+# # APOE Adjustment - regress out APOE
+# #############################
+# #getting APOE type
+# apoeres <- read.csv("C:\\Work Folder\\paper data longitudinal phases\\APOERES.csv") %>% #OR Local: "C:\\Documents\\paper data longitudinal phases\\APOERES.csv"
+#   dplyr::select(RID, APGEN1, APGEN2) %>%
+#   dplyr::mutate(apoe = paste(paste("E", APGEN1, sep = ""), paste("E", APGEN2, sep = ""), sep = "/"),
+#                 RID = as.character(RID)) %>%
+#   dplyr::distinct()
+# 
+# mri_plot_data <- merge(mri_plot_data, apoeres, by = "RID") 
+# mri_plot_data <- mri_plot_data %>%
+#   dplyr::mutate(apoe_combined = case_when(apoe == "E2/E3" | apoe == "E3/E2" | apoe == "E2/E2" ~ "E2",
+#                                           apoe == "E3/E3" ~ "E3",
+#                                           apoe == "E3/E4" | apoe == "E4/E3" | apoe == "E4/E4" ~ "E4",
+#                                           apoe == "E2/E4" | apoe == "E4/E2" ~ "E2/E4"))
+# 
+# mri_plot_data$apoe_combined = relevel(as.factor(mri_plot_data$apoe_combined), ref = "E3")
+# 
+# #getting amyloid-negative CN cases
+# mri_plot_data_temp <- mri_plot_data %>%
+#   dplyr::filter(diags == "CU")
+# mri_plot_data_temp <- mri_plot_data_temp %>%
+#   dplyr::left_join(amyloid_negs) %>%
+#   dplyr::mutate(diff_time = abs(lubridate::time_length(difftime(EXAMDATE, first_a_neg_date_pet), "years"))) %>%
+#   dplyr::group_by(RID) %>%
+#   dplyr::filter(diff_time == min(diff_time)) %>%
+#   dplyr::ungroup()
+# mri_plot_data_temp <- mri_plot_data_temp %>%
+#   dplyr::group_by(RID) %>%
+#   dplyr::filter(row_number() == 1) %>%
+#   dplyr::ungroup()
+# 
+# # creating list of variables that need to be apoe-adjusted - for now just volumes and cortical thickness
+# features_mri_plot_data <- mri_plot_data %>%
+#   dplyr::select(contains("CV") | contains("TS") | contains("SV"))
+# 
+# variables_mri_plot_data <- c()
+# 
+# for (roi_num in 1:length(names(features_mri_plot_data))){
+#   current_roi <- names(features_mri_plot_data)[roi_num]
+#   variables_mri_plot_data <- append(variables_mri_plot_data, current_roi)
+# }
+# 
+# for (i in variables_mri_plot_data){
+#   # print(i)
+#   #regressing out apoe in cn/amyloid-
+#   lm_mod_apoe <- lm(mri_plot_data_temp[[i]] ~ apoe_combined, data = mri_plot_data_temp, na.action=na.exclude) 
+#   
+#   #creating a new variable for each i
+#   predictions_apoe <- predict(lm_mod_apoe, mri_plot_data)
+#   mri_plot_data[[i]] <- mri_plot_data[[i]] - predictions_apoe
+#   mri_plot_data[[i]] <- coef(lm_mod_apoe)[1] + mri_plot_data[i] 
+#   mri_plot_data[,i] = mri_plot_data[,i][[1]] }
+# 
+# #############################
+# # Education Adjustment - regress out education
+# #############################
+# education <- read.csv("C:\\Work Folder\\paper data longitudinal phases\\demographics.csv") %>%
+#   dplyr::select(RID, PTEDUCAT) %>%
+#   dplyr::group_by(RID) %>%
+#   dplyr::slice(1) %>%
+#   dplyr::ungroup()
+# 
+# mri_plot_data <- merge(mri_plot_data, education, by = "RID")
+# 
+# #getting amyloid-negative CN cases
+# mri_plot_data_temp <- mri_plot_data %>%
+#   dplyr::filter(diags == "CU")
+# mri_plot_data_temp <- mri_plot_data_temp %>%
+#   dplyr::left_join(amyloid_negs) %>%
+#   dplyr::mutate(diff_time = abs(lubridate::time_length(difftime(EXAMDATE, first_a_neg_date_pet), "years"))) %>%
+#   dplyr::group_by(RID) %>%
+#   dplyr::filter(diff_time == min(diff_time)) %>%
+#   dplyr::ungroup()
+# mri_plot_data_temp <- mri_plot_data_temp %>%
+#   dplyr::group_by(RID) %>%
+#   dplyr::filter(row_number() == 1) %>%
+#   dplyr::ungroup()
+# 
+# # creating list of variables that need to be education-adjusted - for now just volumes and cortical thickness
+# features_mri_plot_data <- mri_plot_data %>%
+#   dplyr::select(contains("CV") | contains("TS") | contains("SV"))
+# 
+# variables_mri_plot_data <- c()
+# 
+# for (roi_num in 1:length(names(features_mri_plot_data))){
+#   current_roi <- names(features_mri_plot_data)[roi_num]
+#   variables_mri_plot_data <- append(variables_mri_plot_data, current_roi)
+# }
+# 
+# # regression for education-adjustment
+# for (i in variables_mri_plot_data){
+#   fit <- lm(mri_plot_data_temp[[i]] ~ PTEDUCAT, data = mri_plot_data_temp, na.action=na.exclude)
+#   mri_plot_data[i] <- mri_plot_data[paste0(i)] - (mri_plot_data$PTEDUCAT - mean(mri_plot_data_temp$PTEDUCAT, na.rm = T)) * fit$coefficients[2]
+# }
+# 
+# #############################
+# # Gender Adjustment - regress out gender
+# #############################
+# 
+# # creating list of variables that need to be gender-adjusted - for now just volumes and cortical thickness
+# features_mri_plot_data <- mri_plot_data %>%
+#   dplyr::select(contains("CV") | contains("TS") | contains("SV"))
+# 
+# variables_mri_plot_data <- c()
+# 
+# for (roi_num in 1:length(names(features_mri_plot_data))){
+#   current_roi <- names(features_mri_plot_data)[roi_num]
+#   variables_mri_plot_data <- append(variables_mri_plot_data, current_roi)
+# }
+# 
+# for (i in variables_mri_plot_data){
+#   # print(i)
+#   #regressing out gender in cn/amyloid-
+#   lm_mod_gender <- lm(mri_plot_data_temp[[i]] ~ PTGENDER, data = mri_plot_data_temp, na.action=na.exclude) 
+#   
+#   #creating a new variable for each i
+#   predictions_gender <- predict(lm_mod_gender, mri_plot_data)
+#   mri_plot_data[[i]] <- mri_plot_data[[i]] - predictions_gender
+#   mri_plot_data[[i]] <- coef(lm_mod_gender)[1] + mri_plot_data[i] 
+#   mri_plot_data[,i] = mri_plot_data[,i][[1]] }
