@@ -24,3 +24,7 @@ medical_covariates <- dplyr::full_join(vitals,hachinski %>%
 medical_covariates <- dplyr::full_join(medical_covariates,
                                        lab_data,
                                        by = "RID") 
+
+medical_covariates <- dplyr::full_join(medical_covariates,
+                                       egfr_df,
+                                       by = "RID") 
