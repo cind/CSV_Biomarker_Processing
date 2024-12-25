@@ -171,14 +171,12 @@ date_table_pacc <- dplyr::full_join(adas_q4_for_pacc %>%
                                     ),by=c("RID","VISCODE_mmse")
 )
 
-for(i in 1:nrow(date_table_pacc)){
-date_table_pacc$pacc_date[i] <- median((as.numeric(DescTools::Mode(c(date_table_pacc$adas_date[i],
-                date_table_pacc$neurobat_date[i],
-                date_table_pacc$neurobat_scores_date[i],
-                date_table_pacc$ldel_date[i],
-                date_table_pacc$mmse_date[i]),
-                na.rm=TRUE))))
-}
+date_table_pacc <-
+  date_table_pacc %>%
+  dplyr::mutate(
+    date_na_count = sum(is.na(c(adas_date,neurobat_date,neurobat_scores_date,ldel_date,mmse_date))),
+    pacc_date = median(c(adas_date,neurobat_date,neurobat_scores_date,ldel_date,mmse_date),
+                      na.rm=TRUE))
 
 date_table_pacc <- date_table_pacc %>%
   dplyr::mutate(pacc_date = as.Date(pacc_date,origin="1970-01-01")) %>%
